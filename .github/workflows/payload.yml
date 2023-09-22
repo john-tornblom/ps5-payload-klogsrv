@@ -47,6 +47,6 @@ jobs:
     - name: Upload payloads
       uses: actions/upload-artifact@v3
       with:
-        name: Payload binaries
+        name: Payload binary
         path: ./*.elf
         if-no-files-found: error
