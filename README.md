@@ -38,5 +38,6 @@ to discuss the solution properly before you commit time and effort.
 
 ## License
 ps5-payload-klogsrv is licensed under the GPLv3+.
+
 [sdk]: https://github.com/john-tornblom/ps5-payload-sdk
 [issues]: https://github.com/john-tornblom/ps5-payload-klogsrvissues/new
