@@ -25,7 +25,7 @@ class ColorFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format = "[%(asctime)s] %(name)s: %(message)s"
+    format = "[%(asctime)s] %(message)s"
 
     FORMATS = {
         logging.DEBUG: grey + format + reset,
@@ -45,6 +45,10 @@ sh = logging.StreamHandler()
 sh.setFormatter(ColorFormatter())
 sh.setLevel(logging.DEBUG)
 
+logger = logging.getLogger('klog')
+logger.addHandler(sh)
+logger.setLevel(logging.DEBUG)
+
 
 def logline(line):
     priority = 118
@@ -57,24 +61,7 @@ def logline(line):
     facility = priority >> 3
     severity = priority & 7
 
-    match = re.match('\[(.*?)\]', line)
-    category = ''
-
-    if match:
-        category = match.group(1)
-        line = line[len(category)+2:]
-
-    if line.startswith('[ERROR]'):
-        severity = 3
-        line = line[7:]
-
-    if not category in LOGGERS:
-        logger = logging.getLogger(category)
-        logger.addHandler(sh)
-        logger.setLevel(logging.DEBUG)
-        LOGGERS[category] = logger
-
-    LOGGERS[category].log(LEVELS[severity], line.strip())
+    logger.log(LEVELS[severity], line.strip())
 
 
 for line in sys.stdin:
