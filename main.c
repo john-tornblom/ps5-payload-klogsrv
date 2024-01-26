@@ -244,7 +244,7 @@ main() {
   sceKernelSetProcessName("klogsrv.elf");
   while(1) {
     serve_file("/dev/klog", port);
-    sleep(1);
+    sleep(3);
   }
   _exit(EXIT_SUCCESS);
 
