@@ -246,7 +246,6 @@ main() {
     serve_file("/dev/klog", port);
     sleep(3);
   }
-  _exit(EXIT_SUCCESS);
 
   return 0;
 }
