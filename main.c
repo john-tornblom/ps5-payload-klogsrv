@@ -234,9 +234,11 @@ int
 main() {
   uint16_t port = 3232;
 
+  signal(SIGCHLD, SIG_IGN);
   if(syscall(SYS_rfork, RFPROC | RFNOWAIT | RFCFDG)) {
     return 0;
   }
+
   open("/dev/null", O_RDONLY);    // stdin
   open("/dev/console", O_WRONLY); // stdout
   open("/dev/console", O_WRONLY); // stderr
