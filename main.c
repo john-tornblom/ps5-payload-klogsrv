@@ -36,7 +36,6 @@ typedef struct notify_request {
 
 
 int sceKernelSendNotificationRequest(int, notify_request_t*, size_t, int);
-int sceKernelSetProcessName(const char*);
 
 
 static void
@@ -234,16 +233,10 @@ int
 main() {
   uint16_t port = 3232;
 
-  signal(SIGCHLD, SIG_IGN);
-  if(syscall(SYS_rfork, RFPROC | RFNOWAIT | RFCFDG)) {
-    return 0;
-  }
+  syscall(SYS_thr_set_name, -1, "klogsrv.elf");
+  dup2(open("/dev/console", O_WRONLY), STDOUT_FILENO);
+  dup2(open("/dev/console", O_WRONLY), STDERR_FILENO);
 
-  open("/dev/null", O_RDONLY);    // stdin
-  open("/dev/console", O_WRONLY); // stdout
-  open("/dev/console", O_WRONLY); // stderr
-
-  sceKernelSetProcessName("klogsrv.elf");
   while(1) {
     serve_file("/dev/klog", port);
     sleep(3);
