@@ -255,6 +255,7 @@ main() {
   syscall(SYS_setsid);
   syscall(SYS_thr_set_name, -1, "klogsrv.elf");
 
+  printf("[klogsrv.elf] KLOG server was compiled at %s %s\n", __DATE__, __TIME__);
   while(1) {
     serve_file("/dev/klog", port);
     sleep(3);
