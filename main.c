@@ -229,13 +229,31 @@ serve_file(const char *path, uint16_t port) {
 }
 
 
+/**
+ *
+ **/
+static void
+init_stdio(void) {
+  int fd = open("/dev/console", O_WRONLY);
+
+  close(STDERR_FILENO);
+  close(STDOUT_FILENO);
+
+  dup2(fd, STDOUT_FILENO);
+  dup2(fd, STDERR_FILENO);
+
+  close(fd);
+}
+
+
+
 int
 main() {
   uint16_t port = 3232;
 
+  init_stdio();
+  syscall(SYS_setsid);
   syscall(SYS_thr_set_name, -1, "klogsrv.elf");
-  dup2(open("/dev/console", O_WRONLY), STDOUT_FILENO);
-  dup2(open("/dev/console", O_WRONLY), STDERR_FILENO);
 
   while(1) {
     serve_file("/dev/klog", port);
