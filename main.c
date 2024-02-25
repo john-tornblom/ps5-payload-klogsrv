@@ -235,11 +235,13 @@ serve_file(const char *path, uint16_t port) {
  **/
 static void
 init_stdio(void) {
-  int fd = open("/dev/console", O_WRONLY);
+  int fd = open("/dev/console", O_RDWR);
 
   close(STDERR_FILENO);
   close(STDOUT_FILENO);
+  close(STDIN_FILENO);
 
+  dup2(fd, STDIN_FILENO);
   dup2(fd, STDOUT_FILENO);
   dup2(fd, STDERR_FILENO);
 
