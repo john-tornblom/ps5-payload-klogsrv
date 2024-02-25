@@ -25,6 +25,7 @@ along with this program; see the file COPYING. If not, see
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/sysctl.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -247,15 +248,67 @@ init_stdio(void) {
 
 
 
+/**
+ * Fint the pid of a process with the given name.
+ **/
+pid_t
+find_pid(const char* name) {
+  int mib[4] = {1, 14, 8, 0};
+  pid_t pid = -1;
+  size_t buf_size;
+  uint8_t *buf;
+
+  if(sysctl(mib, 4, 0, &buf_size, 0, 0)) {
+    perror("[elfldr.elf] sysctl");
+    return -1;
+  }
+
+  if(!(buf=malloc(buf_size))) {
+    perror("[elfldr.elf] malloc");
+    return -1;
+  }
+
+  if(sysctl(mib, 4, buf, &buf_size, 0, 0)) {
+    perror("[elfldr.elf] sysctl");
+    free(buf);
+    return -1;
+  }
+
+  for(uint8_t *ptr=buf; ptr<(buf+buf_size);) {
+    int ki_structsize = *(int*)ptr;
+    pid_t ki_pid = *(pid_t*)&ptr[72];
+    char *ki_tdname = (char*)&ptr[447];
+
+    ptr += ki_structsize;
+    if(!strcmp(name, ki_tdname)) {
+      pid = ki_pid;
+    }
+  }
+
+  free(buf);
+
+  return pid;
+}
+
+
 int
 main() {
   uint16_t port = 3232;
+  pid_t pid;
 
   init_stdio();
-  syscall(SYS_setsid);
+  printf("[klogsrv.elf] KLOG server was compiled at %s %s\n", __DATE__, __TIME__);
+
+  while((pid=find_pid("klogsrv.elf")) > 0) {
+    if(kill(pid, SIGKILL)) {
+      perror("kill");
+      _exit(-1);
+    }
+    sleep(1);
+  }
+
   syscall(SYS_thr_set_name, -1, "klogsrv.elf");
 
-  printf("[klogsrv.elf] KLOG server was compiled at %s %s\n", __DATE__, __TIME__);
   while(1) {
     serve_file("/dev/klog", port);
     sleep(3);
