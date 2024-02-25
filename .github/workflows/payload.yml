@@ -40,11 +40,11 @@ jobs:
         echo PS5_HOST=ps5 >> $GITHUB_ENV
         echo PS5_PORT=9021 >> $GITHUB_ENV
 
-    - name: Build for PS5
+    - name: Build
       run: |
         make clean all
 
-    - name: Upload payloads
+    - name: Upload payload
       uses: actions/upload-artifact@v3
       with:
         name: Payload
