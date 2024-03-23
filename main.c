@@ -29,6 +29,8 @@ along with this program; see the file COPYING. If not, see
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include <ps5/klog.h>
+
 
 typedef struct notify_request {
   char useless[45];
@@ -50,7 +52,8 @@ notify(const char *fmt, ...) {
   va_end(args);
 
   sceKernelSendNotificationRequest(0, &req, sizeof req, 0);
-  printf("[klogsrv.elf] %s\n", req.message);
+  klog_puts(req.message);
+  puts(req.message);
 }
 
 
@@ -67,7 +70,7 @@ serve_file_while_connected(const char *path, int server_fd) {
   char ch;
 
   if((file_fd=open(path, O_RDONLY)) < 0) {
-    perror("[klogsrv.elf] open");
+    klog_perror("open");
     return -1;
   }
 
@@ -87,7 +90,7 @@ serve_file_while_connected(const char *path, int server_fd) {
     case 0:
       continue;
     case -1:
-      perror("[klogsrv.elf] select");
+      klog_perror("select");
       close(file_fd);
       return -1;
     }
@@ -95,7 +98,7 @@ serve_file_while_connected(const char *path, int server_fd) {
     // new connection
     if(FD_ISSET(server_fd, &temp_set)) {
       if((client_fd=accept(server_fd, NULL, NULL)) < 0) {
-	perror("[klogsrv.elf] accept");
+	klog_perror("accept");
 	err = -1;
 	break;
       }
@@ -106,7 +109,7 @@ serve_file_while_connected(const char *path, int server_fd) {
     // new data from file
     if(FD_ISSET(file_fd, &temp_set)) {
       if(read(file_fd, &ch, 1) != 1) {
-	perror("[klogsrv.elf] read");
+	klog_perror("read");
 	err = -1;
 	break;
       }
@@ -146,7 +149,7 @@ serve_file(const char *path, uint16_t port) {
   int flags;
 
   if(getifaddrs(&ifaddr) == -1) {
-    perror("[klogsrv.elf] getifaddrs");
+    klog_perror("getifaddrs");
     return -1;
   }
 
@@ -184,12 +187,12 @@ serve_file(const char *path, uint16_t port) {
   }
 
   if((sockfd=socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    perror("[klogsrv.elf] socket");
+    klog_perror("socket");
     return -1;
   }
 
   if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
-    perror("[klogsrv.elf] setsockopt");
+    klog_perror("setsockopt");
     return -1;
   }
 
@@ -199,12 +202,12 @@ serve_file(const char *path, uint16_t port) {
   sin.sin_port = htons(port);
 
   if(bind(sockfd, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
-    perror("[klogsrv.elf] bind");
+    klog_perror("bind");
     return -1;
   }
 
   if(listen(sockfd, 5) < 0) {
-    perror("[klogsrv.elf] listen");
+    klog_perror("listen");
     return -1;
   }
 
@@ -213,7 +216,7 @@ serve_file(const char *path, uint16_t port) {
     FD_ZERO(&set);
     FD_SET(sockfd, &set);
     if(select(sockfd+1, &set, NULL, NULL, NULL) < 0) {
-      perror("[klogsrv.elf] select");
+      klog_perror("select");
       return -1;
     }
 
@@ -231,47 +234,28 @@ serve_file(const char *path, uint16_t port) {
 
 
 /**
- *
- **/
-static void
-init_stdio(void) {
-  int fd = open("/dev/console", O_RDWR);
-
-  close(STDERR_FILENO);
-  close(STDOUT_FILENO);
-  close(STDIN_FILENO);
-
-  dup2(fd, STDIN_FILENO);
-  dup2(fd, STDOUT_FILENO);
-  dup2(fd, STDERR_FILENO);
-
-  close(fd);
-}
-
-
-
-/**
  * Fint the pid of a process with the given name.
  **/
-pid_t
+static pid_t
 find_pid(const char* name) {
   int mib[4] = {1, 14, 8, 0};
+  pid_t mypid = getpid();
   pid_t pid = -1;
   size_t buf_size;
   uint8_t *buf;
 
   if(sysctl(mib, 4, 0, &buf_size, 0, 0)) {
-    perror("[elfldr.elf] sysctl");
+    klog_perror("sysctl");
     return -1;
   }
 
   if(!(buf=malloc(buf_size))) {
-    perror("[elfldr.elf] malloc");
+    klog_perror("malloc");
     return -1;
   }
 
   if(sysctl(mib, 4, buf, &buf_size, 0, 0)) {
-    perror("[elfldr.elf] sysctl");
+    klog_perror("sysctl");
     free(buf);
     return -1;
   }
@@ -282,7 +266,7 @@ find_pid(const char* name) {
     char *ki_tdname = (char*)&ptr[447];
 
     ptr += ki_structsize;
-    if(!strcmp(name, ki_tdname)) {
+    if(!strcmp(name, ki_tdname) && ki_pid != mypid) {
       pid = ki_pid;
     }
   }
@@ -298,18 +282,16 @@ main() {
   uint16_t port = 3232;
   pid_t pid;
 
-  init_stdio();
-  printf("[klogsrv.elf] KLOG server was compiled at %s %s\n", __DATE__, __TIME__);
+  syscall(SYS_thr_set_name, -1, "klogsrv.elf");
+  klog_printf("Socket server was compiled at %s %s\n", __DATE__, __TIME__);
 
   while((pid=find_pid("klogsrv.elf")) > 0) {
     if(kill(pid, SIGKILL)) {
-      perror("kill");
-      _exit(-1);
+      klog_perror("kill");
+      return EXIT_FAILURE;
     }
     sleep(1);
   }
-
-  syscall(SYS_thr_set_name, -1, "klogsrv.elf");
 
   while(1) {
     serve_file("/dev/klog", port);
