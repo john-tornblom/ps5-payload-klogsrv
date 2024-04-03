@@ -146,7 +146,6 @@ serve_file(const char *path, uint16_t port) {
   int ifaddr_wait = 1;
   fd_set set;
   int sockfd;
-  int flags;
 
   if(getifaddrs(&ifaddr) == -1) {
     klog_perror("getifaddrs");

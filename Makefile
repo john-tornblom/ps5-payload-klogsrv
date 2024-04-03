@@ -26,7 +26,7 @@ ELF := klogsrv.elf
 CC := $(PS5_PAYLOAD_SDK)/host/x86_64-ps5-payload-cc
 LD := $(PS5_PAYLOAD_SDK)/host/x86_64-ps5-payload-ld
 
-CFLAGS := -O2
+CFLAGS := -Wall -Werror
 LDADD  := -lkernel_web -lSceLibcInternal
 
 all: $(ELF)
