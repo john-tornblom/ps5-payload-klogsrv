@@ -14,17 +14,16 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-ifndef PS5_PAYLOAD_SDK
-    $(error PS5_PAYLOAD_SDK is undefined)
-endif
-
 PS5_HOST ?= ps5
 PS5_PORT ?= 9021
 
-ELF := klogsrv.elf
+ifdef PS5_PAYLOAD_SDK
+    include $(PS5_PAYLOAD_SDK)/make/x86_64-ps5-payload.inc
+else
+    $(error PS5_PAYLOAD_SDK is undefined)
+endif
 
-CC := $(PS5_PAYLOAD_SDK)/host/x86_64-ps5-payload-cc
-LD := $(PS5_PAYLOAD_SDK)/host/x86_64-ps5-payload-ld
+ELF := klogsrv.elf
 
 CFLAGS := -Wall -Werror
 LDADD  := -lkernel_web -lSceLibcInternal
@@ -41,5 +40,5 @@ clean:
 	rm -f *.o $(ELF)
 
 test: $(ELF)
-	nc -q0 $(PS5_HOST) $(PS5_PORT) < $^
+	$(PS5_PAYLOAD_DEPLOY) -h $(PS5_HOST) -p $(PS5_PORT) $^
 
