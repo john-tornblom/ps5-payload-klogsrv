@@ -26,18 +26,14 @@ endif
 ELF := klogsrv.elf
 
 CFLAGS := -Wall -Werror
-LDADD  := -lkernel_web -lSceLibcInternal
 
 all: $(ELF)
 
-%.o: %.c
-	$(CC) -c $(CFLAGS) -o $@ $^
-
-$(ELF): main.o
-	$(LD) $^ $(LDADD) -o $@
+$(ELF): main.c
+	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
-	rm -f *.o $(ELF)
+	rm -f $(ELF)
 
 test: $(ELF)
 	$(PS5_DEPLOY) -h $(PS5_HOST) -p $(PS5_PORT) $^
