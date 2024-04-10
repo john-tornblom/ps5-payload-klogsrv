@@ -1,3 +1,7 @@
+# This project has moved: https://github.com/ps5-payload-dev/klogsrv
+
+***
+
 # PS5 klog server
 ps5-payload-klogsrv is a simple socket server for jailbroken PS5s that redirects
 /dev/klog to sockets connected on port 3232.
